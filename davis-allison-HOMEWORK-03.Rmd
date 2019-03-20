@@ -1,0 +1,38 @@
+---
+title: "davis-allison-HOMEWORK-03"
+author: "Allison Davis"
+date: "March 19, 2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Problem 1
+
+#### Create R function named **Z.prop.test()** that can perform 1- or 2-sample Z tests for *proportion* data
+  * arguments:
+    - **p1** = estimated proportion 
+    - **n1** = sample size
+    - **p2** and **n2** = second sample info for 2-sampled tests (defult to NULL)
+    - **p0** = expected value for the population proportion
+    - **alternative** : default "two.sided"
+    - **conf.level** : default 0.95
+  * alternative = "less" *or* alternative = "greater" used to test is p1 is smaller/larger than p2
+  * validity check: both n x pi, and n x (1-pi) >5; if not, print warning "Normal distribution not a valid assumption."
+  * list returned containing Z (the test statistic), P (the appropriate p value), and CI (two sided CI w/ respect to "conf.level" around p1 in one-sample, or p2-p1 in two-sample)
+  
+  
+## Problem 2
+
+#### Create a linear regression model to compare longevity and brain size of primates within the Kamilar and Cooper dataset.           *Use both longevity~brain size and log(longevity)~log(brain size).*
+
+  * fit regression model and create a scatterplot with fitted line and fitted model equation (use geom_text()).
+  * Identify/interpret the point estimate slope (beta1) and the outcome of the test associated with both null and alternative hypotheses.
+    - find 90% CI for the slope of beta1 parameter
+  * add lines for the 90% CI and PI on plot and include a legend.
+  * Produce a point estimate and 90% PI for the longevity of a species whose brain weight is 800g. 
+    - ***Do you trust the model to predict observations accurately for this value of the explanatory variable? Why or why not?***
+  
+  * looking at both models (original and log), ***which do you think is better and why?***
