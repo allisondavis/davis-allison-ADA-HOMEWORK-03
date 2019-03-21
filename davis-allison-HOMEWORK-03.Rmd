@@ -19,10 +19,52 @@ knitr::opts_chunk$set(echo = TRUE)
     - **p0** = expected value for the population proportion
     - **alternative** : default "two.sided"
     - **conf.level** : default 0.95
-  * alternative = "less" *or* alternative = "greater" used to test is p1 is smaller/larger than p2
+  * alternative = "less" *or* alternative = "greater" used to test if p1 is smaller/larger than p2
   * validity check: both n x pi, and n x (1-pi) >5; if not, print warning "Normal distribution not a valid assumption."
   * list returned containing Z (the test statistic), P (the appropriate p value), and CI (two sided CI w/ respect to "conf.level" around p1 in one-sample, or p2-p1 in two-sample)
   
+```{r}
+Z.prop.test <- function(x,y=NULL,pi,alternative="two.sided", conf.level=0.95) {
+ 
+  #Validity check
+   if (n1 * pi < 5 & n1 * (1-pi) <5 | n2 * pi <5 & n2 * (1-pi) <5) {
+    warning("Normal distribution not a valid assumption.")
+   }
+  
+  #Arguments
+  p1 <- mean(x)
+  n1 <- length(x)
+  p2 <- mean(y)
+  n2 <- length(y)
+  p0 <- pi
+  pstar <- (sum(x)+sum(y))/(length(x)+length(y))
+  
+  #Z statistical test for one-sample, then 2-sample
+   if (y=NULL) {
+    Z <- (p1-p0)/sqrt(p0*(1-p0)/n1)
+  } else {
+    Z <- (p2-p1-p0)/sqrt(pstar*(1-pstar)*(1/n1+1/n2))
+  }
+  
+  #p value
+  p.upper <- 1-pnorm(Z, lower.tail = TRUE)
+  p.lower <- pnorm(Z, lower.tail = FALSE)
+  P <- p.upper + p.lower
+  
+  #CI for one-sample, then 2-sample
+  upper <- 1-(1-conf.level)/2
+  if (y=NULL) {
+    CI <- p1 + c(-1,1)* qnorm(upper) * sqrt(p1*(1-p1)/n1)
+  } else {
+    CI <- (p2-p1) + c(-1,1)*qnorm(upper) * sqrt((p2*(1-p2)/n2)+(p1*(1-p1)/n1))
+  }
+    
+  return(list(test_statistic=Z, p_value=P, confidence_intervals=CI))
+  
+}
+
+```
+
   
 ## Problem 2
 
