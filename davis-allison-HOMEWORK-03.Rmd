@@ -24,56 +24,150 @@ knitr::opts_chunk$set(echo = TRUE)
   * list returned containing Z (the test statistic), P (the appropriate p value), and CI (two sided CI w/ respect to "conf.level" around p1 in one-sample, or p2-p1 in two-sample)
   
 ```{r}
-Z.prop.test <- function(x,y=NULL,pi,alternative="two.sided", conf.level=0.95) {
- 
-  #Validity check
-   if (n1 * pi < 5 & n1 * (1-pi) <5 | n2 * pi <5 & n2 * (1-pi) <5) {
-    warning("Normal distribution not a valid assumption.")
-   }
+Z.prop.test <- function(x,y=Inf,pi,alternative="two.sided", conf.level=0.95) {
   
   #Arguments
   p1 <- mean(x)
   n1 <- length(x)
-  p2 <- mean(y)
-  n2 <- length(y)
+  p2 <- 0
+  n2 <- 0
   p0 <- pi
-  pstar <- (sum(x)+sum(y))/(length(x)+length(y))
-  
-  #Z statistical test for one-sample, then 2-sample
-   if (y=NULL) {
-    Z <- (p1-p0)/sqrt(p0*(1-p0)/n1)
-  } else {
-    Z <- (p2-p1-p0)/sqrt(pstar*(1-pstar)*(1/n1+1/n2))
-  }
-  
-  #p value
-  p.upper <- 1-pnorm(Z, lower.tail = TRUE)
-  p.lower <- pnorm(Z, lower.tail = FALSE)
-  P <- p.upper + p.lower
-  
-  #CI for one-sample, then 2-sample
   upper <- 1-(1-conf.level)/2
-  if (y=NULL) {
-    CI <- p1 + c(-1,1)* qnorm(upper) * sqrt(p1*(1-p1)/n1)
+  
+   if (y==Inf) {
+    #Validity check
+    if (n1 * pi < 5 | n1 * (1-pi) <5) {warning("Normal distribution not a valid assumption.")}
+    Z <- (p1-p0)/sqrt(p0*(1-p0)/n1) #Z-statistic one-sample
+    if (alternative == "less") {P <- pnorm(Z, lower.tail = TRUE)} else {P<- pnorm(Z, lower.tail = FALSE)} #p value 
+    CI <- p1 + c(-1,1)* qnorm(upper) * sqrt(p1*(1-p1)/n1) #confidence intervals
   } else {
-    CI <- (p2-p1) + c(-1,1)*qnorm(upper) * sqrt((p2*(1-p2)/n2)+(p1*(1-p1)/n1))
-  }
+    #Validity check
+    if(n1 * pi < 5 | n1 * (1-pi) <5 | n2 * pi  <5 | n2 * (1-pi) <5) {warning("Normal distribution not a valid assumption.")}
+   #Arguments
+    p2 <- mean(y)
+    n2 <- length(y)
+    pstar <- (sum(x)+sum(y))/(length(x)+length(y))
     
+    Z <- (p2-p1-p0)/sqrt(pstar*(1-pstar)*(1/n1+1/n2)) #Z-statistic one-sample
+    p.upper <- 1-pnorm(Z, lower.tail = TRUE) 
+    p.lower <- pnorm(Z, lower.tail = FALSE)
+    P <- p.upper + p.lower			      #p value
+    CI <- (p2-p1) + c(-1,1)*qnorm(upper) * sqrt((p2*(1-p2)/n2)+(p1*(1-p1)/n1)) #confidence intervals
+  }
+      
   return(list(test_statistic=Z, p_value=P, confidence_intervals=CI))
   
 }
-
 ```
 
+###### Now to test this function using class mistnetting examples.
+
+* One-sample:
+
+```{r}
+
+v <- c(0, 1, 1, 1, 0, 1, 0, 0, 1, 1, 0, 0, 1, 1, 0, 1, 1, 0, 0, 1, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1)
+pi <- 0.8
+
+Z.prop.test(v,pi=pi,alternative = "less")
+
+```
+* Two-sample:
+
+```{r}
+b1 <- c(1, 0, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 0, 1, 0)
+b2 <- c(1, 1, 0, 0, 1, 1, 1, 1, 0, 1, 0, 1, 1, 1, 0, 1, 0, 1, 1, 1, 1, 1, 0, 0, 1, 1, 0, 1, 1, 1)
+
+pi<-0
+
+Z.prop.test(b1,b2,pi)
+
+```
   
 ## Problem 2
 
 #### Create a linear regression model to compare longevity and brain size of primates within the Kamilar and Cooper dataset.           *Use both longevity~brain size and log(longevity)~log(brain size).*
 
+```{r}
+library(readr)
+f <- "https://raw.githubusercontent.com/difiore/ADA-2019/master/KamilarAndCooperData.csv"
+d <- read_csv(f, col_names = TRUE)
+head(d)
+
+```
   * fit regression model and create a scatterplot with fitted line and fitted model equation (use geom_text()).
+  
+```{r}
+library(ggplot2)
+d <- d[complete.cases(d[ ,c(5,20)]),]
+par(mfrows=c(1,2))
+
+#for original data
+mb <- lm(MaxLongevity_m~Brain_Size_Species_Mean, data=d)
+mb
+
+l <- list(paste("Fitted model: ", round(coef(mb)[1],4), "+", round(coef(mb)[2], 4), "*", "Brain mass", sep = ""))
+
+mb_plot <- ggplot(data=d, aes(x=Brain_Size_Species_Mean, y=MaxLongevity_m)) + ggtitle("Primate longevity and brain mass") + xlab("Average species brain mass") + ylab("Average species longevity") + geom_point() + geom_smooth(method = "lm", formula = y~x, col="red") + geom_text(x=300, y=100, label=l[[1]])
+mb_plot
+
+#for log transformed data
+life <- log(d$MaxLongevity_m)
+d$life <- life
+brain <- log(d$Brain_Size_Species_Mean)
+d$brain <- brain
+head(d)
+
+mb_log <- lm(life~brain, data = d)
+mb_log
+
+l_log <- list(paste("Fitted model: ", round(coef(mb_log)[1],4), "+", round(coef(mb_log)[2], 4), "*", "Brain mass", sep = ""))
+
+mb_log_plot <- ggplot(data=d, aes(x=brain, y=life))+ ggtitle("Primate longevity and brain mass")+ xlab("Log average species brain mass") + ylab("Log average species longevity") + geom_point() + geom_smooth(method = "lm", formula = y~x, col="red") + geom_text(x=4, y=4.75, label=l_log[[1]])
+mb_log_plot
+
+  
+```
   * Identify/interpret the point estimate slope (beta1) and the outcome of the test associated with both null and alternative hypotheses.
     - find 90% CI for the slope of beta1 parameter
+```{r}
+#The beta1 (regression slope) is 1.218 for raw data and 0.2341 for log transformed data. This can also be calculated by hand.
+
+beta1 <- cov(d$Brain_Size_Species_Mean, d$MaxLongevity_m)/var(d$Brain_Size_Species_Mean)
+
+beta1_log <- cov(d$brain, d$life)/ var(d$brain)
+
+(beta1_d <- list(beta1, beta1_log))
+
+
+```
+      - Beta1 is the predicted difference in Y for every unit of X. For the raw data, for every unit increase in average brain mass, there is approximately 1 unit increase in species longevity. While the increase isn't as strong with the log-transformed data, it is still a positive linear increase. 
+      - In terms of hypothesis testing, a null hypothesis would assume there is no change (positive or negative) in longevity due to change in brain size; this would equate a beta1 of zero. The alternative hyposthesis would assume there is some change in longevity due to brain mass. This would equate to beta1 being anything but zero; since both raw and transformed data have beta1s >0, their relations suggest support for the alternative hypothesis.
+```{r}
+#CI around beta1 for raw data and log-transformed data
+Alpha <- 0.1
+CI_b1 <- confint(mb, level = 1- Alpha)
+CI_b1_log <- confint(mb_log, level = 1-Alpha)
+(CI_betas <- list(CI_b1, CI_b1_log))
+
+
+```
   * add lines for the 90% CI and PI on plot and include a legend.
+```{r}
+#PI for raw and log-transformed data
+life_hat <- predict(mb, newdata = data.frame(Brain_Size_Species_Mean = d$Brain_Size_Species_Mean))
+
+life_log_hat <- predict(mb_log, newdata = data.frame(brain = d$brain))
+
+(life_hats <- list(life_hat, life_log_hat))
+
+#CI and PI added to plots
+par(mfrows=c(1,2))
+
+MB_plot <- mb_plot + 
+
+
+```
   * Produce a point estimate and 90% PI for the longevity of a species whose brain weight is 800g. 
     - ***Do you trust the model to predict observations accurately for this value of the explanatory variable? Why or why not?***
   
