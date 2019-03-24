@@ -100,7 +100,7 @@ head(d)
 ```{r}
 library(ggplot2)
 d <- d[complete.cases(d[ ,c(5,20)]),]
-par(mfrows=c(1,2))
+par(mfrow=c(1,2))
 
 #for original data
 mb <- lm(MaxLongevity_m~Brain_Size_Species_Mean, data=d)
@@ -116,7 +116,6 @@ life <- log(d$MaxLongevity_m)
 d$life <- life
 brain <- log(d$Brain_Size_Species_Mean)
 d$brain <- brain
-head(d)
 
 mb_log <- lm(life~brain, data = d)
 mb_log
@@ -128,6 +127,7 @@ mb_log_plot
 
   
 ```
+  
   * Identify/interpret the point estimate slope (beta1) and the outcome of the test associated with both null and alternative hypotheses.
     - find 90% CI for the slope of beta1 parameter
 ```{r}
@@ -141,34 +141,61 @@ beta1_log <- cov(d$brain, d$life)/ var(d$brain)
 
 
 ```
+  
       - Beta1 is the predicted difference in Y for every unit of X. For the raw data, for every unit increase in average brain mass, there is approximately 1 unit increase in species longevity. While the increase isn't as strong with the log-transformed data, it is still a positive linear increase. 
       - In terms of hypothesis testing, a null hypothesis would assume there is no change (positive or negative) in longevity due to change in brain size; this would equate a beta1 of zero. The alternative hyposthesis would assume there is some change in longevity due to brain mass. This would equate to beta1 being anything but zero; since both raw and transformed data have beta1s >0, their relations suggest support for the alternative hypothesis.
+      
+      
 ```{r}
 #CI around beta1 for raw data and log-transformed data
 Alpha <- 0.1
 CI_b1 <- confint(mb, level = 1- Alpha)
 CI_b1_log <- confint(mb_log, level = 1-Alpha)
-(CI_betas <- list(CI_b1, CI_b1_log))
+CI_betas <- list(CI_b1, CI_b1_log)
+head(CI_betas)
 
+d <- cbind(d,CI_b1=CI_b1)
+d <- cbind(d,CI_b1_log=CI_b1_log)
 
 ```
   * add lines for the 90% CI and PI on plot and include a legend.
 ```{r}
 #PI for raw and log-transformed data
-life_hat <- predict(mb, newdata = data.frame(Brain_Size_Species_Mean = d$Brain_Size_Species_Mean))
+life_pi <- predict(mb, newdata = data.frame(Brain_Size_Species_Mean = d$Brain_Size_Species_Mean), interval = "prediction", level = 0.90)
 
-life_log_hat <- predict(mb_log, newdata = data.frame(brain = d$brain))
+life_log_pi <- predict(mb_log, newdata = data.frame(brain = d$brain), interval = "prediction", level = 0.90)
 
-(life_hats <- list(life_hat, life_log_hat))
+life_pis <- list(life_pi, life_log_pi)
+head(life_pis,5)
+
+d <- cbind(d, life_pi=life_pi, life_log_pi=life_log_pi)
+
 
 #CI and PI added to plots
-par(mfrows=c(1,2))
+par(mfrow=c(1,2))
 
-MB_plot <- mb_plot + 
+MB_plot <- mb_plot + geom_line(data = d, aes(x=d$Brain_Size_Species_Mean, y=d$life_pi.lwr), colour="blue") + geom_line(data = d, aes(x=d$Brain_Size_Species_Mean, y=d$life_pi.upr), colour="blue") + scale_colour_manual("", breaks= c("CI", "PI"), values = c("grey", "blue")) + theme(legend.position = c(0.9,0.9))
+
+MB_log_plot <- mb_log_plot + geom_line(data=d, aes(x=d$brain, y=d$life_log_pi.lwr), colour="blue") + geom_line(data=d, aes(x=d$brain, y=d$life_log_pi.upr), colour="blue") + scale_colour_manual("", breaks= c("CI", "PI"), values = c("grey", "blue")) + theme(legend.position = c(0.9,0.9))
+
+MB_plot
+MB_log_plot
 
 
 ```
+  
   * Produce a point estimate and 90% PI for the longevity of a species whose brain weight is 800g. 
     - ***Do you trust the model to predict observations accurately for this value of the explanatory variable? Why or why not?***
+
+```{r}
+pi_800 <- predict(mb, newdata = data.frame(Brain_Size_Species_Mean = 800), interval = "prediction", level = 0.90)
+
+pi_log_800 <- predict(mb_log, newdata = data.frame(brain=800), interval = "prediction", level = 0.90)
+
+(point_est <- list(pi_800, pi_log_800))
+```
+    - I don't expect the model to accurately predict this value. While I'm sure it may not be far off from reality, this value is out of the range of data we have, and at this point, longevity may not follow a similar pattern.
   
   * looking at both models (original and log), ***which do you think is better and why?***
+    
+    - I believe the log-transformed model better predicts the relationship between brain mass and logevity, as seen in the more even spread of the data. 
