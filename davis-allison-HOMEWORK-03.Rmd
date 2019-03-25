@@ -108,7 +108,7 @@ mb
 
 l <- list(paste("Fitted model: ", round(coef(mb)[1],4), "+", round(coef(mb)[2], 4), "*", "Brain mass", sep = ""))
 
-mb_plot <- ggplot(data=d, aes(x=Brain_Size_Species_Mean, y=MaxLongevity_m)) + ggtitle("Primate longevity and brain mass") + xlab("Average species brain mass") + ylab("Average species longevity") + geom_point() + geom_smooth(method = "lm", formula = y~x, aes(color="red")) + geom_text(x=300, y=100, label=l[[1]])
+mb_plot <- ggplot(data=d, aes(x=Brain_Size_Species_Mean, y=MaxLongevity_m)) + ggtitle("Primate longevity and brain mass") + xlab("Average species brain mass") + ylab("Average species longevity") + geom_point() + geom_smooth(method = "lm", formula = y~x) + geom_text(x=300, y=100, label=l[[1]])
 mb_plot
 
 #for log transformed data
@@ -122,7 +122,7 @@ mb_log
 
 l_log <- list(paste("Fitted model: ", round(coef(mb_log)[1],4), "+", round(coef(mb_log)[2], 4), "*", "Brain mass", sep = ""))
 
-mb_log_plot <- ggplot(data=d, aes(x=brain, y=life))+ ggtitle("Primate longevity and brain mass")+ xlab("Log average species brain mass") + ylab("Log average species longevity") + geom_point() + geom_smooth(method = "lm", formula = y~x, col="red") + geom_text(x=4, y=4.75, label=l_log[[1]])
+mb_log_plot <- ggplot(data=d, aes(x=brain, y=life))+ ggtitle("Primate longevity and brain mass")+ xlab("Log average species brain mass") + ylab("Log average species longevity") + geom_point() + geom_smooth(method = "lm", formula = y~x) + geom_text(x=4, y=4.75, label=l_log[[1]])
 mb_log_plot
 
   
@@ -160,6 +160,15 @@ d <- cbind(d,CI_b1_log=CI_b1_log)
 ```
   * add lines for the 90% CI and PI on plot and include a legend.
 ```{r}
+#CI for raw and log-transformed data
+life_ci <- predict(mb, newdata = data.frame(Brain_Size_Species_Mean = d$Brain_Size_Species_Mean), interval = "confidence", level = 0.90)
+
+life_log_ci <- predict(mb_log, newdata = data.frame(brain = d$brain), interval = "confidence", level = 0.90)
+
+life_cis <- list(life_ci, life_log_ci)
+
+d <- cbind(d, life_ci = life_ci, life_log_ci = life_log_ci)
+
 #PI for raw and log-transformed data
 life_pi <- predict(mb, newdata = data.frame(Brain_Size_Species_Mean = d$Brain_Size_Species_Mean), interval = "prediction", level = 0.90)
 
@@ -170,17 +179,28 @@ head(life_pis,5) #Not sure why it's showing the entire table...
 
 d <- cbind(d, life_pi=life_pi, life_log_pi=life_log_pi)
 
-
+head(d)
+d$life_pi.fit <- NULL
 #CI and PI added to plots
 par(mfrow=c(1,2))
 
-MB_plot <- mb_plot + geom_line(data = d, aes(x=d$Brain_Size_Species_Mean, y=d$life_pi.lwr), aes(colour="blue")) + geom_line(data = d, aes(x=d$Brain_Size_Species_Mean, y=d$life_pi.upr), aes(colour="blue")) + scale_colour_manual("", breaks= c("CI", "PI"), values = c("grey", "blue")) + theme(legend.position = c(0.5,0.5))
+MB_plot <- mb_plot + 
+    geom_line(data=d, aes(x=d$Brain_Size_Species_Mean, y=d$life_ci.lwr, colour="Confidence intervals")) +
+    geom_line(data=d, aes(x=d$Brain_Size_Species_Mean, y=d$life_ci.upr, colour="Confidence intervals")) +
+    geom_line(data = d, aes(x=d$Brain_Size_Species_Mean, y=d$life_pi.lwr, colour="Prediction intervals")) +
+    geom_line(data = d, aes(x=d$Brain_Size_Species_Mean, y=d$life_pi.upr, colour="Prediction intervals")) +
+    scale_colour_manual(values = c("red", "purple")) 
 
-MB_log_plot <- mb_log_plot + geom_line(data=d, aes(x=d$brain, y=d$life_log_pi.lwr), colour="blue") + geom_line(data=d, aes(x=d$brain, y=d$life_log_pi.upr), colour="blue") + labs(colour="Intervals") +  scale_colour_manual("", breaks= c("CI", "PI"), values = c("grey", "blue")) + theme(legend.position = c(0.9,0.9))
+MB_log_plot <- mb_log_plot +
+    geom_line(data=d, aes(x=d$brain, y=d$life_log_ci.lwr, colour="Confidence intervals")) +
+    geom_line(data=d, aes(x=d$brain, y=d$life_log_ci.upr, colour="Confidence intervals")) +
+    geom_line(data=d, aes(x=d$brain, y=d$life_log_pi.lwr, colour="Prediction intervals")) +
+    geom_line(data=d, aes(x=d$brain, y=d$life_log_pi.upr, colour="Prediction intervals"))  +
+    scale_colour_manual(values = c("red", "purple")) 
 
 MB_plot
 MB_log_plot
-#Not sure why the legend won't show up, and not sure why the par() function won't work...
+#Not sure why the par() function won't work...
 
 ```
   
