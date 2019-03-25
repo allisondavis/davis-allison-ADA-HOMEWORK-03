@@ -108,7 +108,7 @@ mb
 
 l <- list(paste("Fitted model: ", round(coef(mb)[1],4), "+", round(coef(mb)[2], 4), "*", "Brain mass", sep = ""))
 
-mb_plot <- ggplot(data=d, aes(x=Brain_Size_Species_Mean, y=MaxLongevity_m)) + ggtitle("Primate longevity and brain mass") + xlab("Average species brain mass") + ylab("Average species longevity") + geom_point() + geom_smooth(method = "lm", formula = y~x, col="red") + geom_text(x=300, y=100, label=l[[1]])
+mb_plot <- ggplot(data=d, aes(x=Brain_Size_Species_Mean, y=MaxLongevity_m)) + ggtitle("Primate longevity and brain mass") + xlab("Average species brain mass") + ylab("Average species longevity") + geom_point() + geom_smooth(method = "lm", formula = y~x, aes(color="red")) + geom_text(x=300, y=100, label=l[[1]])
 mb_plot
 
 #for log transformed data
@@ -166,7 +166,7 @@ life_pi <- predict(mb, newdata = data.frame(Brain_Size_Species_Mean = d$Brain_Si
 life_log_pi <- predict(mb_log, newdata = data.frame(brain = d$brain), interval = "prediction", level = 0.90)
 
 life_pis <- list(life_pi, life_log_pi)
-head(life_pis,5)
+head(life_pis,5) #Not sure why it's showing the entire table...
 
 d <- cbind(d, life_pi=life_pi, life_log_pi=life_log_pi)
 
@@ -174,13 +174,13 @@ d <- cbind(d, life_pi=life_pi, life_log_pi=life_log_pi)
 #CI and PI added to plots
 par(mfrow=c(1,2))
 
-MB_plot <- mb_plot + geom_line(data = d, aes(x=d$Brain_Size_Species_Mean, y=d$life_pi.lwr), colour="blue") + geom_line(data = d, aes(x=d$Brain_Size_Species_Mean, y=d$life_pi.upr), colour="blue") + scale_colour_manual("", breaks= c("CI", "PI"), values = c("grey", "blue")) + theme(legend.position = c(0.9,0.9))
+MB_plot <- mb_plot + geom_line(data = d, aes(x=d$Brain_Size_Species_Mean, y=d$life_pi.lwr), aes(colour="blue")) + geom_line(data = d, aes(x=d$Brain_Size_Species_Mean, y=d$life_pi.upr), aes(colour="blue")) + scale_colour_manual("", breaks= c("CI", "PI"), values = c("grey", "blue")) + theme(legend.position = c(0.5,0.5))
 
-MB_log_plot <- mb_log_plot + geom_line(data=d, aes(x=d$brain, y=d$life_log_pi.lwr), colour="blue") + geom_line(data=d, aes(x=d$brain, y=d$life_log_pi.upr), colour="blue") + scale_colour_manual("", breaks= c("CI", "PI"), values = c("grey", "blue")) + theme(legend.position = c(0.9,0.9))
+MB_log_plot <- mb_log_plot + geom_line(data=d, aes(x=d$brain, y=d$life_log_pi.lwr), colour="blue") + geom_line(data=d, aes(x=d$brain, y=d$life_log_pi.upr), colour="blue") + labs(colour="Intervals") +  scale_colour_manual("", breaks= c("CI", "PI"), values = c("grey", "blue")) + theme(legend.position = c(0.9,0.9))
 
 MB_plot
 MB_log_plot
-
+#Not sure why the legend won't show up, and not sure why the par() function won't work...
 
 ```
   
@@ -194,8 +194,10 @@ pi_log_800 <- predict(mb_log, newdata = data.frame(brain=800), interval = "predi
 
 (point_est <- list(pi_800, pi_log_800))
 ```
+    
     - I don't expect the model to accurately predict this value. While I'm sure it may not be far off from reality, this value is out of the range of data we have, and at this point, longevity may not follow a similar pattern.
   
   * looking at both models (original and log), ***which do you think is better and why?***
+    
     
     - I believe the log-transformed model better predicts the relationship between brain mass and logevity, as seen in the more even spread of the data. 
